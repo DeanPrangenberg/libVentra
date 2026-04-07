@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 4.1)
 project(libVentra LANGUAGES CXX)
 
 add_library(libVentra INTERFACE
-    benchmarks/vector/ventra_vector_std_vector.cpp)
+    benchmarks/vector/ventra_concurrent_v1_vector_std_vector.cpp)
 
 target_sources(libVentra INTERFACE
     FILE_SET HEADERS
@@ -116,18 +116,16 @@ if(PROJECT_IS_TOP_LEVEL)
 
     find_package(Threads REQUIRED)
 
-    add_executable(libVentra_ventra_vector_std_vector_benchmark benchmarks/vector/ventra_vector_std_vector.cpp)
-
-    add_executable(libVentra_ventra_concurrent_vector_std_ventra_benchmark benchmarks/vector/ventra_concurrent_v1_vector_std_vector.cpp)
-
-    target_link_libraries(libVentra_ventra_vector_std_vector_benchmark PRIVATE
+    add_executable(libVentra_vector_ventra_concurrent_v1_vector_std_vector benchmarks/vector/ventra_concurrent_v1_vector_std_vector.cpp)
+    target_link_libraries(libVentra_vector_ventra_concurrent_v1_vector_std_vector PRIVATE
         libVentra
         benchmark::benchmark
         benchmark::benchmark_main
         Threads::Threads
     )
 
-    target_link_libraries(libVentra_ventra_concurrent_vector_std_ventra_benchmark PRIVATE
+    add_executable(libVentra_vector_ventra_vector_std_vector benchmarks/vector/ventra_vector_std_vector.cpp)
+    target_link_libraries(libVentra_vector_ventra_vector_std_vector PRIVATE
         libVentra
         benchmark::benchmark
         benchmark::benchmark_main
@@ -136,7 +134,14 @@ if(PROJECT_IS_TOP_LEVEL)
 
     enable_testing()
 
-    add_test(NAME VectorBenchmark COMMAND libVentra_ventra_vector_std_vector_benchmark)
-    add_test(NAME ConcurrentVectorBenchmark COMMAND libVentra_ventra_concurrent_vector_std_ventra_benchmark)
+    add_test(NAME libVentra_vector_ventra_concurrent_v1_vector_std_vector
+        COMMAND libVentra_vector_ventra_concurrent_v1_vector_std_vector
+        --benchmark_format=json
+        --benchmark_out=${CMAKE_CURRENT_BINARY_DIR}/concurrent_v1_vector_benchmark.json)
+
+    add_test(NAME libVentra_vector_ventra_vector_std_vector
+        COMMAND libVentra_vector_ventra_vector_std_vector
+        --benchmark_format=json
+        --benchmark_out=${CMAKE_CURRENT_BINARY_DIR}/vector_benchmark.json)
   endif()
 endif()

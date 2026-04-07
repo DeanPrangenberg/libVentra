@@ -91,6 +91,7 @@ namespace ventra {
         V* allocate(size_t count);
         void deallocate(V* ptr, size_t count) noexcept;
         void destroy_elements(size_t first, size_t last) noexcept;
+
         void reserve_exact(size_t new_capacity);
         [[nodiscard]] size_t growth_capacity(size_t min_capacity) const noexcept;
         bool is_valid_insert_position(const V* iter_pos) const noexcept;

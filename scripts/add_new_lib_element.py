@@ -12,6 +12,8 @@ script_dir = Path(__file__).resolve().parent
 root_dir = script_dir.parent.resolve()
 ventra_include_dir = (root_dir / "include" / "ventra").resolve()
 test_dir = (root_dir / "tests").resolve()
+benchmark_dir = (root_dir / "benchmarks").resolve()
+docs_dir = (root_dir / "docs").resolve()
 cmakelist_file = (root_dir / "CMakeLists.txt").resolve()
 
 header_block_re = re.compile(
@@ -32,6 +34,13 @@ test_target_block_re = re.compile(
 
 discover_tests_block_re = re.compile(
     r"(?P<prefix>[ \t]*include\(GoogleTest\)[ \t]*\n)"
+    r"(?P<body>.*?)"
+    r"(?P<suffix>[ \t]*endif\(\))",
+    re.DOTALL,
+)
+
+benchmark_section_re = re.compile(
+    r"(?P<prefix>[ \t]*find_package\(Threads REQUIRED\)[ \t]*\n)"
     r"(?P<body>.*?)"
     r"(?P<suffix>[ \t]*endif\(\))",
     re.DOTALL,
@@ -129,14 +138,66 @@ def render_test_file(category_name: str, element_name: str) -> str:
     )
 
 
+def render_benchmark_file(category_name: str, element_name: str) -> str:
+    benchmark_name = f"BM_{category_name}_{element_name}_construct"
+
+    return (
+        "//\n"
+        f"// Created by deanprangenberg on {created_on()}.\n"
+        "//\n"
+        "\n"
+        "#include <benchmark/benchmark.h>\n"
+        f"#include <ventra/{category_name}/{element_name}.hpp>\n"
+        "\n"
+        f"static void {benchmark_name}(benchmark::State& state) {{\n"
+        "    for (auto _ : state) {\n"
+        f"        ventra::{element_name}<int> object;\n"
+        "\n"
+        "        benchmark::DoNotOptimize(&object);\n"
+        "        benchmark::ClobberMemory();\n"
+        "    }\n"
+        "}\n"
+        f"BENCHMARK({benchmark_name});\n"
+    )
+
+
+def render_doc_file(category_name: str, element_name: str) -> str:
+    return (
+        f"# `ventra::{element_name}<T>`\n"
+        "\n"
+        "Short description.\n"
+        "\n"
+        "## Header\n"
+        "\n"
+        "```cpp\n"
+        f"#include <ventra/{category_name}/{element_name}.hpp>\n"
+        "```\n"
+        "\n"
+        "## Overview\n"
+        "\n"
+        "- TODO describe purpose\n"
+        "- TODO describe important properties\n"
+        "\n"
+        "## Example\n"
+        "\n"
+        "```cpp\n"
+        f"ventra::{element_name}<int> object;\n"
+        "```\n"
+    )
+
+
 def create_element_files(category_name: str, element_name: str) -> None:
     include_category_dir = ventra_include_dir / category_name
     test_category_dir = test_dir / category_name
+    benchmark_category_dir = benchmark_dir / category_name
+    docs_category_dir = docs_dir / category_name
 
     files_to_create = {
         include_category_dir / f"{element_name}.hpp": render_header_file(element_name),
         include_category_dir / f"{element_name}.tpp": render_tpp_file(element_name),
         test_category_dir / f"{element_name}_test.cpp": render_test_file(category_name, element_name),
+        benchmark_category_dir / f"{element_name}_benchmark.cpp": render_benchmark_file(category_name, element_name),
+        docs_category_dir / f"{element_name}.md": render_doc_file(category_name, element_name),
     }
 
     existing_files = [
@@ -150,6 +211,8 @@ def create_element_files(category_name: str, element_name: str) -> None:
 
     include_category_dir.mkdir(parents=True, exist_ok=True)
     test_category_dir.mkdir(parents=True, exist_ok=True)
+    benchmark_category_dir.mkdir(parents=True, exist_ok=True)
+    docs_category_dir.mkdir(parents=True, exist_ok=True)
 
     for path, content in files_to_create.items():
         path.write_text(content, encoding="utf-8")
@@ -188,6 +251,34 @@ def sorted_test_targets() -> list[tuple[str, str]]:
     ]
 
 
+def build_benchmark_target_name(benchmark_path: Path) -> str:
+    relative_without_suffix = benchmark_path.relative_to(benchmark_dir).with_suffix("")
+    target_suffix = "_".join(relative_without_suffix.parts)
+    return f"libVentra_{target_suffix}"
+
+
+def sorted_benchmark_targets() -> list[tuple[str, str]]:
+    if not benchmark_dir.exists():
+        return []
+
+    benchmark_paths = sorted(
+        (
+            path
+            for path in benchmark_dir.rglob("*")
+            if path.is_file() and path.suffix == ".cpp"
+        ),
+        key=lambda path: path.relative_to(benchmark_dir).as_posix(),
+    )
+
+    return [
+        (
+            build_benchmark_target_name(path),
+            path.relative_to(root_dir).as_posix(),
+        )
+        for path in benchmark_paths
+    ]
+
+
 def render_header_block() -> str:
     entries = "\n".join(f"    {entry}" for entry in sorted_header_entries())
 
@@ -209,8 +300,8 @@ def render_test_target_block() -> str:
 
     blocks = [
         (
-            f"  add_executable({target_name} {test_path})\n"
-            f"  target_link_libraries({target_name} PRIVATE libVentra GTest::gtest_main)"
+            f"    add_executable({target_name} {test_path})\n"
+            f"    target_link_libraries({target_name} PRIVATE libVentra GTest::gtest_main)"
         )
         for target_name, test_path in targets
     ]
@@ -220,8 +311,42 @@ def render_test_target_block() -> str:
 
 def render_discover_tests_block() -> str:
     return "".join(
-        f"  gtest_discover_tests({target_name})\n"
+        f"    gtest_discover_tests({target_name})\n"
         for target_name, _ in sorted_test_targets()
+    )
+
+
+def render_benchmark_section_body() -> str:
+    targets = sorted_benchmark_targets()
+
+    if not targets:
+        return "\n    enable_testing()\n\n"
+
+    executable_blocks = [
+        (
+            f"    add_executable({target_name} {benchmark_path})\n"
+            f"    target_link_libraries({target_name} PRIVATE\n"
+            "        libVentra\n"
+            "        benchmark::benchmark\n"
+            "        benchmark::benchmark_main\n"
+            "        Threads::Threads\n"
+            "    )"
+        )
+        for target_name, benchmark_path in targets
+    ]
+
+    add_test_lines = [
+        f"    add_test(NAME {target_name} COMMAND {target_name})"
+        for target_name, _ in targets
+    ]
+
+    return (
+        "\n"
+        + "\n\n".join(executable_blocks)
+        + "\n\n"
+        + "    enable_testing()\n\n"
+        + "\n".join(add_test_lines)
+        + "\n\n"
     )
 
 
@@ -272,6 +397,13 @@ def sync_cmakelists() -> None:
         "gtest_discover_tests",
     )
 
+    updated_cmakelist_data = replace_wrapped_section(
+        benchmark_section_re,
+        updated_cmakelist_data,
+        render_benchmark_section_body(),
+        "benchmark targets",
+    )
+
     if not updated_cmakelist_data.endswith("\n"):
         updated_cmakelist_data += "\n"
 
@@ -281,7 +413,7 @@ def sync_cmakelists() -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Create a new categorized libVentra element and synchronize sorted CMakeLists.txt blocks.",
+        description="Create a new categorized libVentra element with tests, benchmarks, docs, and synchronized CMake blocks.",
     )
     parser.add_argument(
         "category",
@@ -321,7 +453,7 @@ def main() -> None:
     sync_cmakelists()
 
     print(
-        f"Created {element_name} in category {category_name} and synchronized CMakeLists.txt."
+        f"Created {element_name} in category {category_name} with test, benchmark, and doc files and synchronized CMakeLists.txt."
     )
 
 
