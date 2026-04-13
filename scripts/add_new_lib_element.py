@@ -170,7 +170,7 @@ def render_doc_file(category_name: str, element_name: str) -> str:
         "## Header\n"
         "\n"
         "```cpp\n"
-        f"#include <ventra/{category_name}/{element_name}.hpp>\n"
+        f"#include <ventra/{element_name}.hpp>\n"
         "```\n"
         "\n"
         "## Overview\n"
@@ -336,7 +336,15 @@ def render_benchmark_section_body() -> str:
     ]
 
     add_test_lines = [
-        f"    add_test(NAME {target_name} COMMAND {target_name})"
+        f"""
+            add_test(
+                NAME {target_name}
+                COMMAND {target_name}
+                --benchmark_out=$<SHELL_PATH:${{CMAKE_CURRENT_BINARY_DIR}}/{target_name}.json>
+                --benchmark_out_format=json
+                COMMAND_EXPAND_LISTS
+            )
+        """
         for target_name, _ in targets
     ]
 

@@ -4,7 +4,18 @@
 
 #include <benchmark/benchmark.h>
 #include <vector>
+
 #include "ventra/vector/vector.hpp"
+
+
+static void BenchmarkConfig(benchmark::internal::Benchmark* b) {
+    b->Arg(100000)
+     ->Arg(10000)
+     ->Arg(1000)
+     ->Arg(100)
+     ->Repetitions(10)
+     ->ReportAggregatesOnly(true);
+}
 
 static void BM_StdVector_PushBack(benchmark::State& state) {
     const int num_elements = state.range(0);
@@ -20,7 +31,7 @@ static void BM_StdVector_PushBack(benchmark::State& state) {
         benchmark::ClobberMemory();
     }
 }
-BENCHMARK(BM_StdVector_PushBack)->Arg(1000)->Arg(10000)->Arg(100000);
+BENCHMARK(BM_StdVector_PushBack)->Apply(BenchmarkConfig);
 
 static void BM_VentraVector_PushBack(benchmark::State& state) {
     const int num_elements = state.range(0);
@@ -36,7 +47,7 @@ static void BM_VentraVector_PushBack(benchmark::State& state) {
         benchmark::ClobberMemory();
     }
 }
-BENCHMARK(BM_VentraVector_PushBack)->Arg(1000)->Arg(10000)->Arg(100000);
+BENCHMARK(BM_VentraVector_PushBack)->Apply(BenchmarkConfig);
 
 
 static void BM_StdVector_PushBackReserved(benchmark::State& state) {
@@ -54,7 +65,7 @@ static void BM_StdVector_PushBackReserved(benchmark::State& state) {
         benchmark::ClobberMemory();
     }
 }
-BENCHMARK(BM_StdVector_PushBack)->Arg(1000)->Arg(10000)->Arg(100000);
+BENCHMARK(BM_StdVector_PushBackReserved)->Apply(BenchmarkConfig);
 
 static void BM_VentraVector_PushBackReserved(benchmark::State& state) {
     const int num_elements = state.range(0);
@@ -71,4 +82,4 @@ static void BM_VentraVector_PushBackReserved(benchmark::State& state) {
         benchmark::ClobberMemory();
     }
 }
-BENCHMARK(BM_VentraVector_PushBack)->Arg(1000)->Arg(10000)->Arg(100000);
+BENCHMARK(BM_VentraVector_PushBackReserved)->Apply(BenchmarkConfig);

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 4.1)
 project(libVentra LANGUAGES CXX)
 
 add_library(libVentra INTERFACE
-    benchmarks/vector/ventra_concurrent_v1_vector_std_vector.cpp)
+    benchmarks/vector/ventra_concurrent_test.cpp)
 
 target_sources(libVentra INTERFACE
     FILE_SET HEADERS
@@ -10,8 +10,10 @@ target_sources(libVentra INTERFACE
     FILES
     include/ventra/unordered_map/unordered_map.hpp
     include/ventra/unordered_map/unordered_map.tpp
-    include/ventra/vector/concurrent_v1_vector.hpp
-    include/ventra/vector/concurrent_v1_vector.tpp
+    include/ventra/vector/concurrent_atomic_vector.hpp
+    include/ventra/vector/concurrent_atomic_vector.tpp
+    include/ventra/vector/concurrent_smart_vector.hpp
+    include/ventra/vector/concurrent_smart_vector.tpp
     include/ventra/vector/vector.hpp
     include/ventra/vector/vector.tpp
 )
@@ -89,15 +91,19 @@ if(PROJECT_IS_TOP_LEVEL)
     add_executable(libVentra_unordered_map_unordered_map_test tests/unordered_map/unordered_map_test.cpp)
     target_link_libraries(libVentra_unordered_map_unordered_map_test PRIVATE libVentra GTest::gtest_main)
 
-    add_executable(libVentra_vector_concurrent_v1_vector_test tests/vector/concurrent_v1_vector_test.cpp)
-    target_link_libraries(libVentra_vector_concurrent_v1_vector_test PRIVATE libVentra GTest::gtest_main)
+    add_executable(libVentra_vector_concurrent_atomic_vector_test tests/vector/concurrent_atomic_vector_test.cpp)
+    target_link_libraries(libVentra_vector_concurrent_atomic_vector_test PRIVATE libVentra GTest::gtest_main)
+
+    add_executable(libVentra_vector_concurrent_smart_vector_test tests/vector/concurrent_smart_vector_test.cpp)
+    target_link_libraries(libVentra_vector_concurrent_smart_vector_test PRIVATE libVentra GTest::gtest_main)
 
     add_executable(libVentra_vector_vector_test tests/vector/vector_test.cpp)
     target_link_libraries(libVentra_vector_vector_test PRIVATE libVentra GTest::gtest_main)
 
     include(GoogleTest)
     gtest_discover_tests(libVentra_unordered_map_unordered_map_test)
-    gtest_discover_tests(libVentra_vector_concurrent_v1_vector_test)
+    gtest_discover_tests(libVentra_vector_concurrent_atomic_vector_test)
+    gtest_discover_tests(libVentra_vector_concurrent_smart_vector_test)
     gtest_discover_tests(libVentra_vector_vector_test)
   endif()
 
@@ -116,8 +122,8 @@ if(PROJECT_IS_TOP_LEVEL)
 
     find_package(Threads REQUIRED)
 
-    add_executable(libVentra_vector_ventra_concurrent_v1_vector_std_vector benchmarks/vector/ventra_concurrent_v1_vector_std_vector.cpp)
-    target_link_libraries(libVentra_vector_ventra_concurrent_v1_vector_std_vector PRIVATE
+    add_executable(libVentra_vector_ventra_concurrent_test benchmarks/vector/ventra_concurrent_test.cpp)
+    target_link_libraries(libVentra_vector_ventra_concurrent_test PRIVATE
         libVentra
         benchmark::benchmark
         benchmark::benchmark_main
@@ -134,14 +140,20 @@ if(PROJECT_IS_TOP_LEVEL)
 
     enable_testing()
 
-    add_test(NAME libVentra_vector_ventra_concurrent_v1_vector_std_vector
-        COMMAND libVentra_vector_ventra_concurrent_v1_vector_std_vector
-        --benchmark_format=json
-        --benchmark_out=${CMAKE_CURRENT_BINARY_DIR}/concurrent_v1_vector_benchmark.json)
+    add_test(
+        NAME libVentra_vector_ventra_concurrent_test
+        COMMAND libVentra_vector_ventra_concurrent_test
+        --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_vector_ventra_concurrent_test.json>
+        --benchmark_out_format=json
+        COMMAND_EXPAND_LISTS
+    )
 
-    add_test(NAME libVentra_vector_ventra_vector_std_vector
+    add_test(
+        NAME libVentra_vector_ventra_vector_std_vector
         COMMAND libVentra_vector_ventra_vector_std_vector
-        --benchmark_format=json
-        --benchmark_out=${CMAKE_CURRENT_BINARY_DIR}/vector_benchmark.json)
+        --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_vector_ventra_vector_std_vector.json>
+        --benchmark_out_format=json
+        COMMAND_EXPAND_LISTS
+    )
   endif()
 endif()

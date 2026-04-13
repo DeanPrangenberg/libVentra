@@ -3,14 +3,12 @@
 //
 
 #include <gtest/gtest.h>
-#include <ventra/vector/concurrent_v1_vector.hpp>
+#include <ventra/vector/concurrent_smart_vector.hpp>
 #include <string>
 #include <thread>
 
-#include "ventra/vector/vector.hpp"
-
-TEST(vector_concurrent_v1_vector_test, sizeChanging) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, sizeChanging) {
+    ventra::concurrent_smart_vector<int> vec;
     ASSERT_EQ(vec.size(), 0ULL);
 
     for (size_t i = 1; i < 100; ++i) {
@@ -19,8 +17,8 @@ TEST(vector_concurrent_v1_vector_test, sizeChanging) {
     }
 }
 
-TEST(vector_concurrent_v1_vector_test, atAndAccessOperator) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, atAndAccessOperator) {
+    ventra::concurrent_smart_vector<int> vec;
     vec.push_back(10);
     vec.push_back(20);
 
@@ -39,8 +37,8 @@ TEST(vector_concurrent_v1_vector_test, atAndAccessOperator) {
     }
 }
 
-TEST(vector_concurrent_v1_vector_test, frontBack) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, frontBack) {
+    ventra::concurrent_smart_vector<int> vec;
     vec.push_back(100);
 
     int front = 0;
@@ -72,16 +70,16 @@ TEST(vector_concurrent_v1_vector_test, frontBack) {
     }
 }
 
-TEST(vector_concurrent_v1_vector_test, empty) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, empty) {
+    ventra::concurrent_smart_vector<int> vec;
     ASSERT_TRUE(vec.empty());
 
     vec.push_back(0);
     ASSERT_FALSE(vec.empty());
 }
 
-TEST(vector_concurrent_v1_vector_test, capacity) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, capacity) {
+    ventra::concurrent_smart_vector<int> vec;
     // Min cap ist 32
     ASSERT_EQ(vec.capacity(), 32);
 
@@ -93,15 +91,15 @@ TEST(vector_concurrent_v1_vector_test, capacity) {
 
 }
 
-TEST(vector_concurrent_v1_vector_test, reserve) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, reserve) {
+    ventra::concurrent_smart_vector<int> vec;
     vec.reserve(200);
     ASSERT_EQ(vec.size(), 0);
     ASSERT_TRUE(vec.capacity() >= 200);
 }
 
-TEST(vector_concurrent_v1_vector_test, AtOutOfBoundsReturn) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, AtOutOfBoundsReturn) {
+    ventra::concurrent_smart_vector<int> vec;
     vec.push_back(1);
 
     EXPECT_TRUE(vec.at(0).has_value());
@@ -109,8 +107,8 @@ TEST(vector_concurrent_v1_vector_test, AtOutOfBoundsReturn) {
     EXPECT_FALSE(vec.at(100).has_value());
 }
 
-TEST(vector_concurrent_v1_vector_test, complexTypesString) {
-    ventra::concurrent_v1_vector<std::string> vec;
+TEST(vector_concurrent_smart_vector_test, complexTypesString) {
+    ventra::concurrent_smart_vector<std::string> vec;
 
     vec.push_back("Hello");
     vec.push_back("World");
@@ -122,8 +120,8 @@ TEST(vector_concurrent_v1_vector_test, complexTypesString) {
     ASSERT_EQ(*vec.at(2).value().get(), "Ventra");
 }
 
-TEST(vector_concurrent_v1_vector_test, fastUnpack) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, fastUnpack) {
+    ventra::concurrent_smart_vector<int> vec;
     vec.push_back(10);
 
     const auto out = vec.at(0);
@@ -134,8 +132,8 @@ TEST(vector_concurrent_v1_vector_test, fastUnpack) {
     ASSERT_EQ(val, 10);
 }
 
-TEST(vector_concurrent_v1_vector_test, setAt) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, setAt) {
+    ventra::concurrent_smart_vector<int> vec;
 
     vec.push_back(10);
 
@@ -155,8 +153,8 @@ TEST(vector_concurrent_v1_vector_test, setAt) {
     }
 }
 
-TEST(vector_concurrent_v1_vector_test, setOnOutOfRange) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, setOnOutOfRange) {
+    ventra::concurrent_smart_vector<int> vec;
 
     int set_return_val = 0;
     if (vec.fast_unpack_return_val(vec.set(200, 11), set_return_val)) {
@@ -166,8 +164,8 @@ TEST(vector_concurrent_v1_vector_test, setOnOutOfRange) {
     SUCCEED();
 }
 
-TEST(vector_concurrent_v1_vector_test, ReadWriteTornado) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, ReadWriteTornado) {
+    ventra::concurrent_smart_vector<int> vec;
     const size_t num_writers = std::thread::hardware_concurrency() / 2;
     const size_t num_readers = std::thread::hardware_concurrency() / 2;
     constexpr size_t items_per_writer = 5000;
@@ -218,8 +216,8 @@ TEST(vector_concurrent_v1_vector_test, ReadWriteTornado) {
     EXPECT_GT(successful_reads.load(), 0ULL);
 }
 
-TEST(vector_concurrent_v1_vector_test, ConcurrentPushBack) {
-    ventra::concurrent_v1_vector<int> vec;
+TEST(vector_concurrent_smart_vector_test, ConcurrentPushBack) {
+    ventra::concurrent_smart_vector<int> vec;
     const size_t num_threads = std::thread::hardware_concurrency();
     constexpr size_t items_per_thread = 10000;
 

@@ -5,7 +5,7 @@
 #pragma once
 
 template<typename V>
-constexpr size_t concurrent_v1_vector<V>::calc_chunk_idx(const size_t idx) noexcept {
+constexpr size_t concurrent_smart_vector<V>::calc_chunk_idx(const size_t idx) noexcept {
     if (idx < first_chunk_size_) {
         return 0;
     }
@@ -26,7 +26,7 @@ constexpr size_t concurrent_v1_vector<V>::calc_chunk_idx(const size_t idx) noexc
 
 
 template<typename V>
-constexpr size_t concurrent_v1_vector<V>::calc_local_idx(const size_t idx, const size_t chunk_idx) noexcept {
+constexpr size_t concurrent_smart_vector<V>::calc_local_idx(const size_t idx, const size_t chunk_idx) noexcept {
     if (chunk_idx == 0) {
         return idx;
     }
@@ -44,7 +44,7 @@ constexpr size_t concurrent_v1_vector<V>::calc_local_idx(const size_t idx, const
 
 
 template<typename V>
-concurrent_v1_vector<V>::concurrent_v1_vector() noexcept {
+concurrent_smart_vector<V>::concurrent_smart_vector() noexcept {
     for (size_t i = 0; i < num_chunks_; ++i) {
         chunks_[i].store(
             static_cast<chunk_type>(nullptr),
@@ -57,7 +57,7 @@ concurrent_v1_vector<V>::concurrent_v1_vector() noexcept {
 
 
 template<typename V>
-concurrent_v1_vector<V>::concurrent_v1_vector(const size_t initial_capacity) {
+concurrent_smart_vector<V>::concurrent_smart_vector(const size_t initial_capacity) {
     for (size_t i = 0; i < num_chunks_; ++i) {
         chunks_[i].store(
             static_cast<chunk_type>(nullptr),
@@ -71,7 +71,7 @@ concurrent_v1_vector<V>::concurrent_v1_vector(const size_t initial_capacity) {
 
 template<typename V>
 template<typename ValType>
-concurrent_v1_vector<V>::concurrent_v1_vector(const size_t count, ValType &&val) {
+concurrent_smart_vector<V>::concurrent_smart_vector(const size_t count, ValType &&val) {
     for (size_t i = 0; i < num_chunks_; ++i) {
         chunks_[i].store(
             static_cast<chunk_type>(nullptr),
@@ -88,7 +88,7 @@ concurrent_v1_vector<V>::concurrent_v1_vector(const size_t count, ValType &&val)
 
 
 template<typename V>
-concurrent_v1_vector<V>::~concurrent_v1_vector() {
+concurrent_smart_vector<V>::~concurrent_smart_vector() {
     for (size_t i = 0; i < num_chunks_; ++i) {
         auto chunk_ptr = chunks_[i].load(std::memory_order_acquire);
 
@@ -100,7 +100,7 @@ concurrent_v1_vector<V>::~concurrent_v1_vector() {
 
 
 template<typename V>
-std::optional<std::shared_ptr<V>> concurrent_v1_vector<V>::at(const size_t idx) const {
+std::optional<std::shared_ptr<V>> concurrent_smart_vector<V>::at(const size_t idx) const {
     if (idx > size_.load(std::memory_order_acquire) - 1) {
         return std::nullopt;
     }
@@ -125,43 +125,43 @@ std::optional<std::shared_ptr<V>> concurrent_v1_vector<V>::at(const size_t idx) 
 
 
 template<typename V>
-std::optional<std::shared_ptr<V>> concurrent_v1_vector<V>::front() const {
+std::optional<std::shared_ptr<V>> concurrent_smart_vector<V>::front() const {
     return at(0);
 }
 
 
 template<typename V>
-std::optional<std::shared_ptr<V>> concurrent_v1_vector<V>::back() const {
+std::optional<std::shared_ptr<V>> concurrent_smart_vector<V>::back() const {
     return at(size_ - 1);
 }
 
 
 template<typename V>
-size_t concurrent_v1_vector<V>::size() const noexcept {
+size_t concurrent_smart_vector<V>::size() const noexcept {
     return size_.load(std::memory_order_acquire);
 }
 
 
 template<typename V>
-size_t concurrent_v1_vector<V>::capacity() const noexcept {
+size_t concurrent_smart_vector<V>::capacity() const noexcept {
     return capacity_.load(std::memory_order_acquire);
 }
 
 
 template<typename V>
-bool concurrent_v1_vector<V>::empty() const noexcept {
+bool concurrent_smart_vector<V>::empty() const noexcept {
     return size_.load(std::memory_order_acquire) == 0;
 }
 
 
 template<typename V>
-void concurrent_v1_vector<V>::reserve(const size_t new_capacity) {
+void concurrent_smart_vector<V>::reserve(const size_t new_capacity) {
     ensure_capacity_for_index(new_capacity);
 }
 
 // IN DER TPP:
 template<typename V>
-void concurrent_v1_vector<V>::push_back(const V& val) {
+void concurrent_smart_vector<V>::push_back(const V& val) {
     const size_t idx = size_.fetch_add(1, std::memory_order_acq_rel);
     ensure_capacity_for_index(idx);
 
@@ -171,7 +171,7 @@ void concurrent_v1_vector<V>::push_back(const V& val) {
 }
 
 template<typename V>
-void concurrent_v1_vector<V>::push_back(V&& val) {
+void concurrent_smart_vector<V>::push_back(V&& val) {
     const size_t idx = size_.fetch_add(1, std::memory_order_acq_rel);
     ensure_capacity_for_index(idx);
 
@@ -182,7 +182,7 @@ void concurrent_v1_vector<V>::push_back(V&& val) {
 
 
 template<typename V>
-std::optional<std::shared_ptr<V>> concurrent_v1_vector<V>::set(const size_t idx, const V& val) {
+std::optional<std::shared_ptr<V>> concurrent_smart_vector<V>::set(const size_t idx, const V& val) {
     if (idx > size_.load(std::memory_order_acquire)) {
         return std::nullopt;
     }
@@ -198,7 +198,7 @@ std::optional<std::shared_ptr<V>> concurrent_v1_vector<V>::set(const size_t idx,
 
 
 template<typename V>
-std::optional<std::shared_ptr<V> > concurrent_v1_vector<V>::set(const size_t idx, V&& val) {
+std::optional<std::shared_ptr<V> > concurrent_smart_vector<V>::set(const size_t idx, V&& val) {
     if (idx > size_.load(std::memory_order_acquire)) {
         return std::nullopt;
     }
@@ -215,7 +215,7 @@ std::optional<std::shared_ptr<V> > concurrent_v1_vector<V>::set(const size_t idx
 
 template<typename V>
 template<typename ... Args>
-std::optional<std::shared_ptr<V>> concurrent_v1_vector<V>::set(const size_t idx, Args&&... args) {
+std::optional<std::shared_ptr<V>> concurrent_smart_vector<V>::set(const size_t idx, Args&&... args) {
     if (idx >= size_.load(std::memory_order_acquire)) {
         return std::nullopt;
     }
@@ -228,7 +228,7 @@ std::optional<std::shared_ptr<V>> concurrent_v1_vector<V>::set(const size_t idx,
 }
 
 template<typename V>
-bool concurrent_v1_vector<V>::fast_unpack_return_val(std::optional<std::shared_ptr<V>> val, V& out) {
+bool concurrent_smart_vector<V>::fast_unpack_return_val(std::optional<std::shared_ptr<V>> val, V& out) {
     if (!val.has_value()) {
         return false;
     }
@@ -240,7 +240,7 @@ bool concurrent_v1_vector<V>::fast_unpack_return_val(std::optional<std::shared_p
 
 
 template<typename V>
-void concurrent_v1_vector<V>::insert_at(const size_t idx, std::shared_ptr<V> new_element) {
+void concurrent_smart_vector<V>::insert_at(const size_t idx, std::shared_ptr<V> new_element) {
     const size_t chunk_idx = calc_chunk_idx(idx);
     const size_t local_idx = calc_local_idx(idx, chunk_idx);
 
@@ -249,7 +249,7 @@ void concurrent_v1_vector<V>::insert_at(const size_t idx, std::shared_ptr<V> new
 }
 
 template<typename V>
-void concurrent_v1_vector<V>::ensure_capacity_for_index(const size_t idx) {
+void concurrent_smart_vector<V>::ensure_capacity_for_index(const size_t idx) {
     const size_t target_chunk_idx = calc_chunk_idx(idx);
 
     if (target_chunk_idx >= num_chunks_) {

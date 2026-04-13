@@ -14,19 +14,19 @@
 
 namespace ventra {
     template<typename V>
-    class concurrent_v1_vector {
+    class concurrent_smart_vector {
     public:
         // Constructors
-        explicit concurrent_v1_vector() noexcept;
-        explicit concurrent_v1_vector(size_t initial_capacity);
+        explicit concurrent_smart_vector() noexcept;
+        explicit concurrent_smart_vector(size_t initial_capacity);
 
         template<typename ValType>
-        concurrent_v1_vector(size_t count, ValType&& val);
+        concurrent_smart_vector(size_t count, ValType&& val);
 
-        ~concurrent_v1_vector();
+        ~concurrent_smart_vector();
 
-        concurrent_v1_vector(const concurrent_v1_vector&) = delete;
-        concurrent_v1_vector& operator=(const concurrent_v1_vector&) = delete;
+        concurrent_smart_vector(const concurrent_smart_vector&) = delete;
+        concurrent_smart_vector& operator=(const concurrent_smart_vector&) = delete;
 
         // Element Access
         [[nodiscard]] std::optional<std::shared_ptr<V>> at(size_t idx) const;
@@ -72,5 +72,5 @@ namespace ventra {
         void ensure_capacity_for_index(size_t idx);
     };
 
-#include "concurrent_v1_vector.tpp"
+#include "concurrent_smart_vector.tpp"
 }

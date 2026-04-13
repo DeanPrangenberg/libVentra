@@ -28,7 +28,7 @@ benchmark-plot:
 	ctest --test-dir build-bench --output-on-failure -V
 	cpupower frequency-set --governor powersave
 	echo "balance_performance" | tee /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference
-	python3 scripts/plot_benchmarks.py -f build-bench/
+	python3 scripts/plot.py
 
 stress-test:
 	cmake -S . -B build-tsan -DENABLE_TSAN=ON -DVENTRA_BUILD_TESTS=ON -DVENTRA_BUILD_BENCHMARKS=OFF -DCMAKE_BUILD_TYPE=Debug

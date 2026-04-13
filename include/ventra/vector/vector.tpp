@@ -470,10 +470,18 @@ bool vector<V>::operator==(const vector<V> &other) const {
 
 template<typename V>
 V& vector<V>::operator[](size_t idx) {
+    if (idx >= size_) {
+        throw std::out_of_range(std::format("ventra::vector.at(): Called with out of bounds idx={}", idx));
+    }
+
     return data_[idx];
 }
 
 template<typename V>
 const V& vector<V>::operator[](size_t idx) const {
+    if (idx >= size_) {
+        throw std::out_of_range(std::format("ventra::vector.at(): Called with out of bounds idx={}", idx));
+    }
+
     return data_[idx];
 }

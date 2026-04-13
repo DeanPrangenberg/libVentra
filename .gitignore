@@ -2,7 +2,6 @@
 /cmake-build-release
 /build
 .idea/
-/*.png
 /*.json
 /build-bench/
 /build/
