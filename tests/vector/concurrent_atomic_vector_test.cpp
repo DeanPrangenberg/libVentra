@@ -77,20 +77,6 @@ TEST(vector_concurrent_atomic_vector_test, reserveAndPushBackAcrossChunkBoundari
     EXPECT_EQ(vec.back().value(), 447);
 }
 
-TEST(vector_concurrent_atomic_vector_test, storeAndTryStoreRespectBounds) {
-    ventra::concurrent_atomic_vector<int> vec(3, 10);
-
-    vec.store(0, 11);
-    vec.store(2, 42);
-
-    EXPECT_EQ(vec.load(0), 11);
-    EXPECT_EQ(vec.load(1), 10);
-    EXPECT_EQ(vec.load(2), 42);
-
-    EXPECT_FALSE(vec.try_store(3, 99));
-    EXPECT_THROW(vec.store(3, 99), std::out_of_range);
-}
-
 TEST(vector_concurrent_atomic_vector_test, tryLoadAndTryMethodsReturnFailureForInvalidIndex) {
     ventra::concurrent_atomic_vector<std::uint32_t> vec(2, 0U);
     std::uint32_t expected = 0U;

@@ -11,7 +11,7 @@
 #include <atomic>
 #include <optional>
 #include <bit>
-
+#include <sys/mman.h>
 
 // define cache_line_size needed for aligning
 #ifdef __cpp_lib_hardware_interference_size
@@ -50,7 +50,7 @@ namespace ventra {
     class concurrent_atomic_vector {
     public:
         // Constructors
-        explicit concurrent_atomic_vector() noexcept;
+        explicit concurrent_atomic_vector();
         explicit concurrent_atomic_vector(size_t initial_capacity);
 
         concurrent_atomic_vector(size_t count, const V& val);
@@ -68,13 +68,14 @@ namespace ventra {
 
         // Capacity
         [[nodiscard]] size_t size() const noexcept;
-        [[nodiscard]] size_t capacity() const noexcept;
+        [[nodiscard]] static size_t capacity() noexcept;
         [[nodiscard]] bool empty() const noexcept;
-        void reserve(size_t new_capacity);
+
+        static void reserve(size_t new_capacity);
 
         // Modifiers
-        void push_back(const V& val, std::memory_order order = std::memory_order_release);
-        void push_back(V&& val, std::memory_order order = std::memory_order_release);
+        void push_back(const V& val);
+        void push_back(V&& val);
 
         void store(size_t idx, V&& val, std::memory_order order = std::memory_order_release);
         void store(size_t idx, const V& val, std::memory_order order = std::memory_order_release);
@@ -110,38 +111,70 @@ namespace ventra {
             std::memory_order load_order = std::memory_order_acquire,
             std::memory_order store_order = std::memory_order_release);
 
+        class iterator {
+        private:
+            const concurrent_atomic_vector* vec_;
+            size_t idx_;
+
+        public:
+            using iterator_category = std::random_access_iterator_tag;
+            using value_type = V;
+            using difference_type = std::ptrdiff_t;
+            using pointer = V*;
+            using reference = V;
+
+            iterator(const concurrent_atomic_vector* vec, size_t idx) : vec_(vec), idx_(idx) {}
+
+            V operator*() const {
+                return vec_->load(idx_);
+            }
+
+            iterator& operator++() {
+                idx_++;
+                return *this;
+            }
+
+            iterator operator++(int) {
+                iterator temp = *this;
+                idx_++;
+                return temp;
+            }
+
+            bool operator==(const iterator& other) const { return idx_ == other.idx_; }
+            bool operator!=(const iterator& other) const { return idx_ != other.idx_; }
+
+            iterator operator+(difference_type n) const { return iterator(vec_, idx_ + n); }
+            iterator operator-(difference_type n) const { return iterator(vec_, idx_ - n); }
+            difference_type operator-(const iterator& other) const { return idx_ - other.idx_; }
+        };
+
+        iterator begin() const {
+            return iterator(this, 0);
+        }
+
+        iterator end() const {
+            return iterator(this, size_.load(std::memory_order_acquire));
+        }
+
     private:
         // Constants
         static constexpr size_t first_chunk_size_ = 32uz;
         static constexpr size_t num_chunks_ = 32uz;
 
-        // Internal state
-        struct alignas(CACHE_LINE_SIZE) padded_atomic {
+        // Element struct
+        struct element {
             std::atomic<V> val;
-
-            padded_atomic() noexcept = default;
-
-            explicit padded_atomic(V v) noexcept : val(v) {}
+            std::atomic<bool> ready;
         };
 
         // Internal Data
-        std::atomic<padded_atomic*> chunks_[num_chunks_];
+        element* data_;
         alignas(CACHE_LINE_SIZE) std::atomic<size_t> size_{0};
         alignas(CACHE_LINE_SIZE) std::atomic<size_t> capacity_{0};
 
-        // Allocation Spinlock
-        alignas(CACHE_LINE_SIZE) std::atomic_flag allocation_lock_ = ATOMIC_FLAG_INIT;
-
-        // helper functions
-        [[nodiscard]] static constexpr size_t calc_chunk_idx(size_t idx) noexcept;
-        [[nodiscard]] static constexpr size_t calc_local_idx(size_t idx) noexcept;
-        [[nodiscard]] static constexpr size_t calc_local_idx(size_t idx, size_t chunk_idx) noexcept;
-
-        [[nodiscard]] padded_atomic* load_chunk_ptr_unchecked(size_t idx) const;
+        static constexpr size_t MAX_CAPACITY = 64ULL * 1024 * 1024 * 1024 / sizeof(V);
 
         [[nodiscard]] bool is_valid_idx(size_t idx) const noexcept;
-
-        void ensure_capacity_for_index(size_t idx);
     };
 
 #include "concurrent_atomic_vector.tpp"
