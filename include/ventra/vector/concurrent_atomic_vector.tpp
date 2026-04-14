@@ -47,6 +47,25 @@ concurrent_atomic_vector<V>::concurrent_atomic_vector(const size_t count, const 
 }
 
 template<typename V>
+concurrent_atomic_vector<V>::concurrent_atomic_vector(std::initializer_list<V> init_list) : concurrent_atomic_vector() {
+    const size_t size = init_list.size();
+
+    if (size == 0) {
+        return;
+    }
+
+    size_.store(size, std::memory_order_release);
+
+    size_t idx = 0;
+
+    for (const V& element: init_list) {
+        new (&data_[idx].val) std::atomic<V>(element);
+        data_[idx].ready.store(true, std::memory_order_release);
+        ++idx;
+    }
+}
+
+template<typename V>
 concurrent_atomic_vector<V>::~concurrent_atomic_vector() {
 
     // Deconstruct all elements if not trivially destructible
@@ -300,6 +319,25 @@ std::optional<bool> concurrent_atomic_vector<V>::try_compare_exchange_strong(
     }
 
     return compare_exchange_strong(idx, expected, desired, load_order, store_order);
+}
+
+template<typename V>
+void concurrent_atomic_vector<V>::clear_NOT_THREAD_SAFE() {
+    const size_t current_size = size_.load(std::memory_order_acquire);
+    if (current_size == 0) {
+        return;
+    }
+
+
+    if constexpr (!std::is_trivially_destructible_v<V>) {
+        for (size_t i = 0; i < current_size; ++i) {
+            std::destroy_at(&data_[i].val);
+        }
+    }
+
+    std::memset(data_, 0, current_size * sizeof(element));
+
+    size_.store(0, std::memory_order_release);
 }
 
 template<typename V>

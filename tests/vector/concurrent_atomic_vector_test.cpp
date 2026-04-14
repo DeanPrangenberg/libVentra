@@ -26,6 +26,16 @@ std::vector<T> snapshot_values(const ventra::concurrent_atomic_vector<T>& vec) {
 }
 }
 
+TEST(vector_concurrent_atomic_vector_test, initializerListConstruction) {
+    const ventra::concurrent_atomic_vector<int> vec = {1, 2, 3};
+
+    EXPECT_FALSE(vec.empty());
+    EXPECT_EQ(vec.size(), 3uz);
+    EXPECT_TRUE(vec.front().has_value());
+    EXPECT_TRUE(vec.back().has_value());
+    EXPECT_TRUE(vec.try_load(0).has_value());
+}
+
 TEST(vector_concurrent_atomic_vector_test, defaultConstruction) {
     ventra::concurrent_atomic_vector<int> vec;
 

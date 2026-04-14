@@ -12,6 +12,7 @@
 #include <optional>
 #include <bit>
 #include <sys/mman.h>
+#include <cstring>
 
 // define cache_line_size needed for aligning
 #ifdef __cpp_lib_hardware_interference_size
@@ -54,6 +55,8 @@ namespace ventra {
         explicit concurrent_atomic_vector(size_t initial_capacity);
 
         concurrent_atomic_vector(size_t count, const V& val);
+
+        concurrent_atomic_vector(std::initializer_list<V> init_list);
 
         ~concurrent_atomic_vector();
 
@@ -110,6 +113,8 @@ namespace ventra {
         [[nodiscard]] std::optional<bool> try_compare_exchange_strong(size_t idx, V& expected, V desired,
             std::memory_order load_order = std::memory_order_acquire,
             std::memory_order store_order = std::memory_order_release);
+
+        void clear_NOT_THREAD_SAFE();
 
         class iterator {
         private:
