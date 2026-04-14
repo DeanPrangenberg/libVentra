@@ -7,8 +7,7 @@ It currently ships with:
 - [vector/vector]({Path(f"./docs/vector/vector.md")})
 - [vector/concurrent_smart_vector]({Path(f"./docs/vector/concurrent_smart_vector.md")})
 - [vector/concurrent_atomic_vector]({Path(f"./docs/vector/concurrent_atomic_vector.md")})
-
-<!-- AUTO-DATA-STRUCTURES:END -->
+- [stack/stack](docs/stack/stack.md)<!-- AUTO-DATA-STRUCTURES:END -->
 
 ## Requirements
 

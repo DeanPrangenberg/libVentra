@@ -7,6 +7,8 @@ target_sources(libVentra INTERFACE
     FILE_SET HEADERS
     BASE_DIRS include
     FILES
+    include/ventra/stack/stack.hpp
+    include/ventra/stack/stack.tpp
     include/ventra/unordered_map/unordered_map.hpp
     include/ventra/unordered_map/unordered_map.tpp
     include/ventra/vector/concurrent_atomic_vector.hpp
@@ -87,6 +89,9 @@ if(PROJECT_IS_TOP_LEVEL)
     )
     FetchContent_MakeAvailable(googletest)
 
+    add_executable(libVentra_stack_stack_test tests/stack/stack_test.cpp)
+    target_link_libraries(libVentra_stack_stack_test PRIVATE libVentra GTest::gtest_main)
+
     add_executable(libVentra_unordered_map_unordered_map_test tests/unordered_map/unordered_map_test.cpp)
     target_link_libraries(libVentra_unordered_map_unordered_map_test PRIVATE libVentra GTest::gtest_main)
 
@@ -100,6 +105,7 @@ if(PROJECT_IS_TOP_LEVEL)
     target_link_libraries(libVentra_vector_vector_test PRIVATE libVentra GTest::gtest_main)
 
     include(GoogleTest)
+    gtest_discover_tests(libVentra_stack_stack_test)
     gtest_discover_tests(libVentra_unordered_map_unordered_map_test)
     gtest_discover_tests(libVentra_vector_concurrent_atomic_vector_test)
     gtest_discover_tests(libVentra_vector_concurrent_smart_vector_test)
@@ -121,6 +127,14 @@ if(PROJECT_IS_TOP_LEVEL)
 
     find_package(Threads REQUIRED)
 
+    add_executable(libVentra_stack_stack_benchmark benchmarks/stack/stack_benchmark.cpp)
+    target_link_libraries(libVentra_stack_stack_benchmark PRIVATE
+        libVentra
+        benchmark::benchmark
+        benchmark::benchmark_main
+        Threads::Threads
+    )
+
     add_executable(libVentra_vector_ventra_concurrent_test benchmarks/vector/ventra_concurrent_test.cpp)
     target_link_libraries(libVentra_vector_ventra_concurrent_test PRIVATE
         libVentra
@@ -138,6 +152,16 @@ if(PROJECT_IS_TOP_LEVEL)
     )
 
     enable_testing()
+
+
+            add_test(
+                NAME libVentra_stack_stack_benchmark
+                COMMAND libVentra_stack_stack_benchmark
+                --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_stack_stack_benchmark.json>
+                --benchmark_out_format=json
+                COMMAND_EXPAND_LISTS
+            )
+        
 
             add_test(
                 NAME libVentra_vector_ventra_concurrent_test

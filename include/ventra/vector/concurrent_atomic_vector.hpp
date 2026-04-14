@@ -128,7 +128,7 @@ namespace ventra {
             using pointer = V*;
             using reference = V;
 
-            iterator(const concurrent_atomic_vector* vec, size_t idx) : vec_(vec), idx_(idx) {}
+            iterator(const concurrent_atomic_vector* vec, const size_t idx) : vec_(vec), idx_(idx) {}
 
             V operator*() const {
                 return vec_->load(idx_);
@@ -145,12 +145,25 @@ namespace ventra {
                 return temp;
             }
 
-            bool operator==(const iterator& other) const { return idx_ == other.idx_; }
-            bool operator!=(const iterator& other) const { return idx_ != other.idx_; }
+            bool operator==(const iterator& other) const {
+                return idx_ == other.idx_;
+            }
 
-            iterator operator+(difference_type n) const { return iterator(vec_, idx_ + n); }
-            iterator operator-(difference_type n) const { return iterator(vec_, idx_ - n); }
-            difference_type operator-(const iterator& other) const { return idx_ - other.idx_; }
+            bool operator!=(const iterator& other) const {
+                return idx_ != other.idx_;
+            }
+
+            iterator operator+(const difference_type n) const {
+                return iterator(vec_, idx_ + n);
+            }
+
+            iterator operator-(const difference_type n) const {
+                return iterator(vec_, idx_ - n);
+            }
+
+            difference_type operator-(const iterator& other) const {
+                return idx_ - other.idx_;
+            }
         };
 
         iterator begin() const {
