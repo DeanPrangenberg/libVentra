@@ -7,6 +7,9 @@ import re
 import sys
 from pathlib import Path
 
+AUTO_DATA_STRUCTURES_BEGIN = "<!-- AUTO-DATA-STRUCTURES:BEGIN -->"
+
+AUTO_DATA_STRUCTURES_END = "<!-- AUTO-DATA-STRUCTURES:END -->"
 
 script_dir = Path(__file__).resolve().parent
 root_dir = script_dir.parent.resolve()
@@ -442,6 +445,33 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def insert_into_readme(category_name, element_name):
+    with open("README.md", "r") as file:
+        data = file.read()
+
+    start_idx = data.find(AUTO_DATA_STRUCTURES_BEGIN)
+    end_idx = data.find(AUTO_DATA_STRUCTURES_END)
+
+    if start_idx == -1 or end_idx == -1:
+        print(f"Warning: {AUTO_DATA_STRUCTURES_BEGIN} or {AUTO_DATA_STRUCTURES_END} missing in {"README.md"}. Skipping.")
+
+    block_content = data[start_idx:end_idx]
+
+    if element_name not in block_content:
+        new_benchmark_md = (
+            f"- [{category_name}/{element_name}]({Path(f"./docs/{category_name}/{element_name}.md")})"
+        )
+
+        new_content = (
+                data[:end_idx].rstrip() +
+                "\n" +
+                new_benchmark_md +
+                data[end_idx:]
+        )
+
+        with open("README.md", "w", encoding="utf-8") as f:
+            f.write(new_content)
+
 def main() -> None:
     ensure_project_layout()
     args = parse_args()
@@ -458,7 +488,10 @@ def main() -> None:
     element_name = normalize_identifier(raw_name, "Element name")
 
     create_element_files(category_name, element_name)
+    insert_into_readme(category_name, element_name)
     sync_cmakelists()
+
+
 
     print(
         f"Created {element_name} in category {category_name} with test, benchmark, and doc files and synchronized CMakeLists.txt."

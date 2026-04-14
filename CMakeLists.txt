@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 4.1)
 project(libVentra LANGUAGES CXX)
 
-add_library(libVentra INTERFACE
-    benchmarks/vector/ventra_concurrent_test.cpp)
+add_library(libVentra INTERFACE)
 
 target_sources(libVentra INTERFACE
     FILE_SET HEADERS
@@ -140,20 +139,23 @@ if(PROJECT_IS_TOP_LEVEL)
 
     enable_testing()
 
-    add_test(
-        NAME libVentra_vector_ventra_concurrent_test
-        COMMAND libVentra_vector_ventra_concurrent_test
-        --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_vector_ventra_concurrent_test.json>
-        --benchmark_out_format=json
-        COMMAND_EXPAND_LISTS
-    )
+            add_test(
+                NAME libVentra_vector_ventra_concurrent_test
+                COMMAND libVentra_vector_ventra_concurrent_test
+                --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_vector_ventra_concurrent_test.json>
+                --benchmark_out_format=json
+                COMMAND_EXPAND_LISTS
+            )
+        
 
-    add_test(
-        NAME libVentra_vector_ventra_vector_std_vector
-        COMMAND libVentra_vector_ventra_vector_std_vector
-        --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_vector_ventra_vector_std_vector.json>
-        --benchmark_out_format=json
-        COMMAND_EXPAND_LISTS
-    )
+            add_test(
+                NAME libVentra_vector_ventra_vector_std_vector
+                COMMAND libVentra_vector_ventra_vector_std_vector
+                --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_vector_ventra_vector_std_vector.json>
+                --benchmark_out_format=json
+                COMMAND_EXPAND_LISTS
+            )
+        
+
   endif()
 endif()

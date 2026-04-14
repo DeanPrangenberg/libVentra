@@ -10,17 +10,7 @@ constexpr size_t concurrent_atomic_vector<V>::calc_chunk_idx(const size_t idx) n
         return 0;
     }
 
-    size_t remaining_idx = idx - first_chunk_size_;
-    size_t current_chunk_idx = 1;
-    size_t current_chunk_capacity = first_chunk_size_ * 2;
-
-    while (remaining_idx >= current_chunk_capacity) {
-        remaining_idx -= current_chunk_capacity;
-        current_chunk_capacity *= 2;
-        ++current_chunk_idx;
-    }
-
-    return current_chunk_idx;
+    return std::bit_width((idx / first_chunk_size_) + 1) - 1;
 }
 
 template<typename V>
@@ -30,19 +20,7 @@ constexpr size_t concurrent_atomic_vector<V>::calc_local_idx(const size_t idx) n
 
 template<typename V>
 constexpr size_t concurrent_atomic_vector<V>::calc_local_idx(const size_t idx, const size_t chunk_idx) noexcept {
-    if (chunk_idx == 0) {
-        return idx;
-    }
-
-    size_t remaining_idx = idx - first_chunk_size_;
-    size_t current_chunk_capacity = first_chunk_size_ * 2;
-
-    for (size_t i = 1; i < chunk_idx; ++i) {
-        remaining_idx -= current_chunk_capacity;
-        current_chunk_capacity *= 2;
-    }
-
-    return remaining_idx;
+    return idx - first_chunk_size_ * ((1ULL << chunk_idx) - 1);
 }
 
 template<typename V>
@@ -87,15 +65,17 @@ template<typename V>
 concurrent_atomic_vector<V>::~concurrent_atomic_vector() {
     for (size_t i = 0; i < num_chunks_; ++i) {
         auto* chunk_ptr = chunks_[i].load(std::memory_order_acquire);
-        if (chunk_ptr != nullptr) {
-            delete[] chunk_ptr;
+        if (chunk_ptr == nullptr) {
+            break;
         }
+
+        delete[] chunk_ptr;
     }
 }
 
 template<typename V>
 V concurrent_atomic_vector<V>::load(const size_t idx, const std::memory_order order) const {
-    auto* chunk_ptr = load_chunk_ptr(idx);
+    auto* chunk_ptr = load_chunk_ptr_unchecked(idx);
     const size_t local_idx = calc_local_idx(idx);
 
     return chunk_ptr[local_idx].val.load(order);
@@ -154,21 +134,21 @@ void concurrent_atomic_vector<V>::reserve(const size_t new_capacity) {
 
 template<typename V>
 void concurrent_atomic_vector<V>::push_back(const V& val, const std::memory_order order) {
-    const size_t idx = size_.fetch_add(1, std::memory_order_acq_rel);
+    const size_t idx = size_.fetch_add(1, std::memory_order_relaxed);
     ensure_capacity_for_index(idx);
     store(idx, val, order);
 }
 
 template<typename V>
 void concurrent_atomic_vector<V>::push_back(V&& val, std::memory_order order) {
-    const size_t idx = size_.fetch_add(1, std::memory_order_acq_rel);
+    const size_t idx = size_.fetch_add(1, std::memory_order_relaxed);
     ensure_capacity_for_index(idx);
     store(idx, std::move(val), order);
 }
 
 template<typename V>
 void concurrent_atomic_vector<V>::store(const size_t idx, V&& val, const std::memory_order order) {
-    auto* chunk_ptr = load_chunk_ptr(idx);
+    auto* chunk_ptr = load_chunk_ptr_unchecked(idx);
     const size_t local_idx = calc_local_idx(idx);
 
     chunk_ptr[local_idx].val.store(std::move(val), order);
@@ -176,7 +156,7 @@ void concurrent_atomic_vector<V>::store(const size_t idx, V&& val, const std::me
 
 template<typename V>
 void concurrent_atomic_vector<V>::store(const size_t idx, const V& val, const std::memory_order order) {
-    auto* chunk_ptr = load_chunk_ptr(idx);
+    auto* chunk_ptr = load_chunk_ptr_unchecked(idx);
     const size_t local_idx = calc_local_idx(idx);
 
     chunk_ptr[local_idx].val.store(val, order);
@@ -204,7 +184,7 @@ bool concurrent_atomic_vector<V>::try_store(const size_t idx, const V& val, cons
 
 template<typename V>
 void concurrent_atomic_vector<V>::fetch_add(const size_t idx, V val, const std::memory_order order) requires SupportsFetchAdd<V> {
-    auto* chunk_ptr = load_chunk_ptr(idx);
+    auto* chunk_ptr = load_chunk_ptr_unchecked(idx);
     const size_t local_idx = calc_local_idx(idx);
 
     chunk_ptr[local_idx].val.fetch_add(val, order);
@@ -222,7 +202,7 @@ bool concurrent_atomic_vector<V>::try_fetch_add(const size_t idx, V val, const s
 
 template<typename V>
 void concurrent_atomic_vector<V>::fetch_sub(const size_t idx, V val, const std::memory_order order) requires SupportsFetchSub<V> {
-    auto* chunk_ptr = load_chunk_ptr(idx);
+    auto* chunk_ptr = load_chunk_ptr_unchecked(idx);
     const size_t local_idx = calc_local_idx(idx);
 
     chunk_ptr[local_idx].val.fetch_sub(val, order);
@@ -240,7 +220,7 @@ bool concurrent_atomic_vector<V>::try_fetch_sub(const size_t idx, V val, const s
 
 template<typename V>
 void concurrent_atomic_vector<V>::fetch_and(const size_t idx, V val, const std::memory_order order) requires SupportsFetchAnd<V> {
-    auto* chunk_ptr = load_chunk_ptr(idx);
+    auto* chunk_ptr = load_chunk_ptr_unchecked(idx);
     const size_t local_idx = calc_local_idx(idx);
 
     chunk_ptr[local_idx].val.fetch_and(val, order);
@@ -258,7 +238,7 @@ bool concurrent_atomic_vector<V>::try_fetch_and(const size_t idx, V val, const s
 
 template<typename V>
 void concurrent_atomic_vector<V>::fetch_or(const size_t idx, V val, const std::memory_order order) requires SupportsFetchOr<V> {
-    auto* chunk_ptr = load_chunk_ptr(idx);
+    auto* chunk_ptr = load_chunk_ptr_unchecked(idx);
     const size_t local_idx = calc_local_idx(idx);
 
     chunk_ptr[local_idx].val.fetch_or(val, order);
@@ -276,7 +256,7 @@ bool concurrent_atomic_vector<V>::try_fetch_or(const size_t idx, V val, const st
 
 template<typename V>
 void concurrent_atomic_vector<V>::fetch_xor(const size_t idx, V val, const std::memory_order order) requires SupportsFetchXor<V> {
-    auto* chunk_ptr = load_chunk_ptr(idx);
+    auto* chunk_ptr = load_chunk_ptr_unchecked(idx);
     const size_t local_idx = calc_local_idx(idx);
 
     chunk_ptr[local_idx].val.fetch_xor(val, order);
@@ -300,7 +280,7 @@ std::optional<bool> concurrent_atomic_vector<V>::compare_exchange_weak(
     const std::memory_order load_order,
     const std::memory_order store_order
 ) {
-    auto* chunk_ptr = load_chunk_ptr(idx);
+    auto* chunk_ptr = load_chunk_ptr_unchecked(idx);
     const size_t local_idx = calc_local_idx(idx);
 
     return chunk_ptr[local_idx].val.compare_exchange_weak(expected, desired, store_order, load_order);
@@ -329,7 +309,7 @@ std::optional<bool> concurrent_atomic_vector<V>::compare_exchange_strong(
     const std::memory_order load_order,
     const std::memory_order store_order
 ) {
-    auto* chunk_ptr = load_chunk_ptr(idx);
+    auto* chunk_ptr = load_chunk_ptr_unchecked(idx);
     const size_t local_idx = calc_local_idx(idx);
 
     return chunk_ptr[local_idx].val.compare_exchange_strong(expected, desired, store_order, load_order);
@@ -351,11 +331,7 @@ std::optional<bool> concurrent_atomic_vector<V>::try_compare_exchange_strong(
 }
 
 template<typename V>
-typename concurrent_atomic_vector<V>::padded_atomic* concurrent_atomic_vector<V>::load_chunk_ptr(const size_t idx) const {
-    if (!is_valid_idx(idx)) {
-        throw std::out_of_range("Index out of range");
-    }
-
+typename concurrent_atomic_vector<V>::padded_atomic * concurrent_atomic_vector<V>::load_chunk_ptr_unchecked(size_t idx) const {
     const size_t chunk_idx = calc_chunk_idx(idx);
     auto* chunk_ptr = chunks_[chunk_idx].load(std::memory_order_acquire);
 
@@ -384,18 +360,23 @@ void concurrent_atomic_vector<V>::ensure_capacity_for_index(const size_t idx) {
             continue;
         }
 
-        const size_t chunk_cap = (i == 0) ? first_chunk_size_ : first_chunk_size_ << i;
-        auto* new_chunk = new padded_atomic[chunk_cap];
+        // Spinlock
+        while (allocation_lock_.test_and_set(std::memory_order_acquire)) {}
 
-        for (size_t j = 0; j < chunk_cap; ++j) {
-            new_chunk[j].val.store(V{}, std::memory_order_relaxed);
-        }
+        if (chunks_[i].load(std::memory_order_acquire) == nullptr) {
+            size_t chunk_cap;
+            if (i == 0) {
+                chunk_cap = first_chunk_size_;
+            } else {
+                chunk_cap = first_chunk_size_ << i;
+            }
 
-        padded_atomic* expected = nullptr;
-        if (!chunks_[i].compare_exchange_strong(expected, new_chunk, std::memory_order_acq_rel)) {
-            delete[] new_chunk;
-        } else {
+            auto* new_chunk = new padded_atomic[chunk_cap];
+
+            chunks_[i].store(new_chunk, std::memory_order_release);
             capacity_.fetch_add(chunk_cap, std::memory_order_relaxed);
         }
+
+        allocation_lock_.clear(std::memory_order_release);
     }
 }

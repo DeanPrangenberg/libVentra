@@ -11,7 +11,7 @@
 #include <atomic>
 #include <optional>
 #include <bit>
-#include <new>
+
 
 // define cache_line_size needed for aligning
 #ifdef __cpp_lib_hardware_interference_size
@@ -124,16 +124,20 @@ namespace ventra {
             explicit padded_atomic(V v) noexcept : val(v) {}
         };
 
+        // Internal Data
         std::atomic<padded_atomic*> chunks_[num_chunks_];
-        std::atomic<size_t> size_{0};
-        std::atomic<size_t> capacity_{0};
+        alignas(CACHE_LINE_SIZE) std::atomic<size_t> size_{0};
+        alignas(CACHE_LINE_SIZE) std::atomic<size_t> capacity_{0};
+
+        // Allocation Spinlock
+        alignas(CACHE_LINE_SIZE) std::atomic_flag allocation_lock_ = ATOMIC_FLAG_INIT;
 
         // helper functions
         [[nodiscard]] static constexpr size_t calc_chunk_idx(size_t idx) noexcept;
         [[nodiscard]] static constexpr size_t calc_local_idx(size_t idx) noexcept;
         [[nodiscard]] static constexpr size_t calc_local_idx(size_t idx, size_t chunk_idx) noexcept;
 
-        [[nodiscard]] padded_atomic* load_chunk_ptr(size_t idx) const;
+        [[nodiscard]] padded_atomic* load_chunk_ptr_unchecked(size_t idx) const;
 
         [[nodiscard]] bool is_valid_idx(size_t idx) const noexcept;
 
