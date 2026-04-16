@@ -37,12 +37,6 @@ There is also a helper script that builds, tests, and installs the library:
 ./scripts/build_and_install_lib.sh
 ```
 
-For a fresh machine, the repository also includes:
-
-```bash
-./scripts/install_online_script.sh
-```
-
 ## CMake Integration
 
 ### Use via `add_subdirectory`
