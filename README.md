@@ -4,9 +4,9 @@
 
 It currently ships with:
 <!-- AUTO-DATA-STRUCTURES:BEGIN -->
-- [vector/vector](./docs/vector/vector.md")
-- [vector/concurrent_smart_vector](./docs/vector/concurrent_smart_vector.md")
-- [vector/concurrent_atomic_vector](./docs/vector/concurrent_atomic_vector.md")
+- [vector/vector](./docs/vector/vector.md)
+- [vector/concurrent_smart_vector](./docs/vector/concurrent_smart_vector.md)
+- [vector/concurrent_atomic_vector](./docs/vector/concurrent_atomic_vector.md)
 - [stack/stack](docs/stack/stack.md)<!-- AUTO-DATA-STRUCTURES:END -->
 
 ## Requirements
