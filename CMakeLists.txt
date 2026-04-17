@@ -7,6 +7,10 @@ target_sources(libVentra INTERFACE
     FILE_SET HEADERS
     BASE_DIRS include
     FILES
+    include/ventra/array/array.hpp
+    include/ventra/array/array.tpp
+    include/ventra/deque/deque.hpp
+    include/ventra/deque/deque.tpp
     include/ventra/stack/stack.hpp
     include/ventra/stack/stack.tpp
     include/ventra/unordered_map/unordered_map.hpp
@@ -89,6 +93,12 @@ if(PROJECT_IS_TOP_LEVEL)
     )
     FetchContent_MakeAvailable(googletest)
 
+    add_executable(libVentra_array_array_test tests/array/array_test.cpp)
+    target_link_libraries(libVentra_array_array_test PRIVATE libVentra GTest::gtest_main)
+
+    add_executable(libVentra_deque_deque_test tests/deque/deque_test.cpp)
+    target_link_libraries(libVentra_deque_deque_test PRIVATE libVentra GTest::gtest_main)
+
     add_executable(libVentra_stack_stack_test tests/stack/stack_test.cpp)
     target_link_libraries(libVentra_stack_stack_test PRIVATE libVentra GTest::gtest_main)
 
@@ -105,6 +115,8 @@ if(PROJECT_IS_TOP_LEVEL)
     target_link_libraries(libVentra_vector_vector_test PRIVATE libVentra GTest::gtest_main)
 
     include(GoogleTest)
+    gtest_discover_tests(libVentra_array_array_test)
+    gtest_discover_tests(libVentra_deque_deque_test)
     gtest_discover_tests(libVentra_stack_stack_test)
     gtest_discover_tests(libVentra_unordered_map_unordered_map_test)
     gtest_discover_tests(libVentra_vector_concurrent_atomic_vector_test)
@@ -126,6 +138,22 @@ if(PROJECT_IS_TOP_LEVEL)
     FetchContent_MakeAvailable(google_benchmark)
 
     find_package(Threads REQUIRED)
+
+    add_executable(libVentra_array_array_benchmark benchmarks/array/array_benchmark.cpp)
+    target_link_libraries(libVentra_array_array_benchmark PRIVATE
+        libVentra
+        benchmark::benchmark
+        benchmark::benchmark_main
+        Threads::Threads
+    )
+
+    add_executable(libVentra_deque_deque_benchmark benchmarks/deque/deque_benchmark.cpp)
+    target_link_libraries(libVentra_deque_deque_benchmark PRIVATE
+        libVentra
+        benchmark::benchmark
+        benchmark::benchmark_main
+        Threads::Threads
+    )
 
     add_executable(libVentra_stack_stack_benchmark benchmarks/stack/stack_benchmark.cpp)
     target_link_libraries(libVentra_stack_stack_benchmark PRIVATE
@@ -153,6 +181,24 @@ if(PROJECT_IS_TOP_LEVEL)
 
     enable_testing()
 
+
+            add_test(
+                NAME libVentra_array_array_benchmark
+                COMMAND libVentra_array_array_benchmark
+                --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_array_array_benchmark.json>
+                --benchmark_out_format=json
+                COMMAND_EXPAND_LISTS
+            )
+        
+
+            add_test(
+                NAME libVentra_deque_deque_benchmark
+                COMMAND libVentra_deque_deque_benchmark
+                --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_deque_deque_benchmark.json>
+                --benchmark_out_format=json
+                COMMAND_EXPAND_LISTS
+            )
+        
 
             add_test(
                 NAME libVentra_stack_stack_benchmark
