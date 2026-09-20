@@ -28,7 +28,8 @@ benchmark-plot:
 	ctest --test-dir build-bench --output-on-failure -V
 	cpupower frequency-set --governor powersave
 	echo "balance_performance" | tee /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference
-	python3 scripts/plot.py
+	export LD_LIBRARY_PATH="$(nix-build '<nixpkgs>' -A stdenv.cc.cc.lib --no-out-link)/lib:$LD_LIBRARY_PATH"
+	python3 scripts/plot.py build-bench/libVentra_deque_concurrent_deque_benchmark.json --output plots
 
 stress-test:
 	cmake -S . -B build-tsan -DENABLE_TSAN=ON -DVENTRA_BUILD_TESTS=ON -DVENTRA_BUILD_BENCHMARKS=OFF -DCMAKE_BUILD_TYPE=Debug

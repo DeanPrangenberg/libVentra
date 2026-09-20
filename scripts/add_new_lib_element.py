@@ -459,13 +459,14 @@ def insert_into_readme(category_name, element_name):
 
     if element_name not in block_content:
         new_benchmark_md = (
-            f"- [{category_name}/{element_name}](./docs/{category_name}/{element_name}.md)"
+            f"- [{category_name}/{element_name}](docs/{category_name}/{element_name}.md)"
         )
 
         new_content = (
                 data[:end_idx].rstrip() +
                 "\n" +
                 new_benchmark_md +
+                "\n" +
                 data[end_idx:]
         )
 

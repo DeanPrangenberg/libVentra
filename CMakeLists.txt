@@ -9,10 +9,15 @@ target_sources(libVentra INTERFACE
     FILES
     include/ventra/array/array.hpp
     include/ventra/array/array.tpp
+    include/ventra/deque/concurrent_deque.hpp
+    include/ventra/deque/concurrent_deque.tpp
+    include/ventra/deque/concurrent_deque_anchor.hpp
+    include/ventra/deque/concurrent_deque_memory_arena.hpp
+    include/ventra/deque/concurrent_deque_memory_arena_mmap.hpp
+    include/ventra/deque/concurrent_deque_memory_arena_new.hpp
+    include/ventra/deque/concurrent_deque_memory_arena_std_aloc.hpp
     include/ventra/deque/deque.hpp
     include/ventra/deque/deque.tpp
-    include/ventra/stack/stack.hpp
-    include/ventra/stack/stack.tpp
     include/ventra/unordered_map/unordered_map.hpp
     include/ventra/unordered_map/unordered_map.tpp
     include/ventra/vector/concurrent_atomic_vector.hpp
@@ -29,6 +34,15 @@ target_include_directories(libVentra INTERFACE
 )
 
 target_compile_features(libVentra INTERFACE cxx_std_23)
+
+target_compile_options(libVentra INTERFACE
+    $<$<CXX_COMPILER_ID:GNU>:-mcx16 -march=native>
+    $<$<CXX_COMPILER_ID:Clang>:-mcx16 -march=native>
+)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_link_libraries(libVentra INTERFACE atomic)
+endif()
 
 include(GNUInstallDirs)
 
@@ -96,11 +110,11 @@ if(PROJECT_IS_TOP_LEVEL)
     add_executable(libVentra_array_array_test tests/array/array_test.cpp)
     target_link_libraries(libVentra_array_array_test PRIVATE libVentra GTest::gtest_main)
 
+    add_executable(libVentra_deque_concurrent_deque_test tests/deque/concurrent_deque_test.cpp)
+    target_link_libraries(libVentra_deque_concurrent_deque_test PRIVATE libVentra GTest::gtest_main)
+
     add_executable(libVentra_deque_deque_test tests/deque/deque_test.cpp)
     target_link_libraries(libVentra_deque_deque_test PRIVATE libVentra GTest::gtest_main)
-
-    add_executable(libVentra_stack_stack_test tests/stack/stack_test.cpp)
-    target_link_libraries(libVentra_stack_stack_test PRIVATE libVentra GTest::gtest_main)
 
     add_executable(libVentra_unordered_map_unordered_map_test tests/unordered_map/unordered_map_test.cpp)
     target_link_libraries(libVentra_unordered_map_unordered_map_test PRIVATE libVentra GTest::gtest_main)
@@ -116,8 +130,8 @@ if(PROJECT_IS_TOP_LEVEL)
 
     include(GoogleTest)
     gtest_discover_tests(libVentra_array_array_test)
+    gtest_discover_tests(libVentra_deque_concurrent_deque_test)
     gtest_discover_tests(libVentra_deque_deque_test)
-    gtest_discover_tests(libVentra_stack_stack_test)
     gtest_discover_tests(libVentra_unordered_map_unordered_map_test)
     gtest_discover_tests(libVentra_vector_concurrent_atomic_vector_test)
     gtest_discover_tests(libVentra_vector_concurrent_smart_vector_test)
@@ -139,40 +153,8 @@ if(PROJECT_IS_TOP_LEVEL)
 
     find_package(Threads REQUIRED)
 
-    add_executable(libVentra_array_array_benchmark benchmarks/array/array_benchmark.cpp)
-    target_link_libraries(libVentra_array_array_benchmark PRIVATE
-        libVentra
-        benchmark::benchmark
-        benchmark::benchmark_main
-        Threads::Threads
-    )
-
-    add_executable(libVentra_deque_deque_benchmark benchmarks/deque/deque_benchmark.cpp)
-    target_link_libraries(libVentra_deque_deque_benchmark PRIVATE
-        libVentra
-        benchmark::benchmark
-        benchmark::benchmark_main
-        Threads::Threads
-    )
-
-    add_executable(libVentra_stack_stack_benchmark benchmarks/stack/stack_benchmark.cpp)
-    target_link_libraries(libVentra_stack_stack_benchmark PRIVATE
-        libVentra
-        benchmark::benchmark
-        benchmark::benchmark_main
-        Threads::Threads
-    )
-
-    add_executable(libVentra_vector_ventra_concurrent_test benchmarks/vector/ventra_concurrent_test.cpp)
-    target_link_libraries(libVentra_vector_ventra_concurrent_test PRIVATE
-        libVentra
-        benchmark::benchmark
-        benchmark::benchmark_main
-        Threads::Threads
-    )
-
-    add_executable(libVentra_vector_ventra_vector_std_vector benchmarks/vector/ventra_vector_std_vector.cpp)
-    target_link_libraries(libVentra_vector_ventra_vector_std_vector PRIVATE
+    add_executable(libVentra_deque_concurrent_deque_benchmark benchmarks/deque/concurrent_deque_benchmark.cpp)
+    target_link_libraries(libVentra_deque_concurrent_deque_benchmark PRIVATE
         libVentra
         benchmark::benchmark
         benchmark::benchmark_main
@@ -180,48 +162,10 @@ if(PROJECT_IS_TOP_LEVEL)
     )
 
     enable_testing()
-
-
             add_test(
-                NAME libVentra_array_array_benchmark
-                COMMAND libVentra_array_array_benchmark
-                --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_array_array_benchmark.json>
-                --benchmark_out_format=json
-                COMMAND_EXPAND_LISTS
-            )
-        
-
-            add_test(
-                NAME libVentra_deque_deque_benchmark
-                COMMAND libVentra_deque_deque_benchmark
-                --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_deque_deque_benchmark.json>
-                --benchmark_out_format=json
-                COMMAND_EXPAND_LISTS
-            )
-        
-
-            add_test(
-                NAME libVentra_stack_stack_benchmark
-                COMMAND libVentra_stack_stack_benchmark
-                --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_stack_stack_benchmark.json>
-                --benchmark_out_format=json
-                COMMAND_EXPAND_LISTS
-            )
-        
-
-            add_test(
-                NAME libVentra_vector_ventra_concurrent_test
-                COMMAND libVentra_vector_ventra_concurrent_test
-                --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_vector_ventra_concurrent_test.json>
-                --benchmark_out_format=json
-                COMMAND_EXPAND_LISTS
-            )
-        
-
-            add_test(
-                NAME libVentra_vector_ventra_vector_std_vector
-                COMMAND libVentra_vector_ventra_vector_std_vector
-                --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_vector_ventra_vector_std_vector.json>
+                NAME libVentra_deque_concurrent_deque_benchmark
+                COMMAND libVentra_deque_concurrent_deque_benchmark
+                --benchmark_out=$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/libVentra_deque_concurrent_deque_benchmark.json>
                 --benchmark_out_format=json
                 COMMAND_EXPAND_LISTS
             )

@@ -4,10 +4,14 @@
 
 It currently ships with:
 <!-- AUTO-DATA-STRUCTURES:BEGIN -->
-- [vector/vector](./docs/vector/vector.md)
-- [vector/concurrent_smart_vector](./docs/vector/concurrent_smart_vector.md)
-- [vector/concurrent_atomic_vector](./docs/vector/concurrent_atomic_vector.md)
-- [stack/stack](docs/stack/stack.md)<!-- AUTO-DATA-STRUCTURES:END -->
+- [vector/vector](docs/vector/vector.md)
+- [vector/concurrent_smart_vector](docs/vector/concurrent_smart_vector.md)
+- [vector/concurrent_atomic_vector](docs/vector/concurrent_atomic_vector.md)
+- [stack/stack](docs/stack/stack.md)
+- [deque/deque](docs/deque/deque.md)
+- [array/array](docs/array/array.md)
+- [deque/concurrent_deque](docs/deque/concurrent_deque.md)
+<!-- AUTO-DATA-STRUCTURES:END -->
 
 ## Requirements
 
